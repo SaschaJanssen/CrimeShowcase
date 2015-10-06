@@ -1,6 +1,7 @@
 package com.rdk.crime.domain;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.annotation.Id;
 
 /**
  *
@@ -8,7 +9,10 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class Crime {
 
-    private String id;
+	@Id
+	private String id;
+
+	private String internalId;
 
     private String caseNumber;
 
@@ -61,7 +65,8 @@ public class Crime {
      * @return
      */
     public static Crime createFromInput( String inputLine ) {
-        String crimeLine = preprocessInlineData( inputLine );
+		String crimeLine = com.rdk.crime.utils.StringUtils
+				.normalizeSubstring(inputLine);
         return mapInputToCrimeObject( crimeLine );
     }
 
@@ -70,11 +75,10 @@ public class Crime {
         String[] split = crimeLine.trim().split( "," );
 
         if ( split.length != 22 ) {
-            // TODO LOG messeage
             return null;
         }
 
-        crime.id = split[0];
+		crime.internalId = split[0];
         crime.caseNumber = split[1];
         crime.date = split[2];
         crime.block = split[3];
@@ -108,23 +112,8 @@ public class Crime {
         return "";
     }
 
-    private static String preprocessInlineData( String line ) {
-        String preprocessedLine = new String( line );
-
-        String[] inlineData = StringUtils.substringsBetween( line, "\"", "\"" );
-
-        if ( StringUtils.isNoneEmpty( inlineData ) ) {
-            for ( String inline : inlineData ) {
-                String modifiyedInlineData = inline.replace( ",", ";" );
-                preprocessedLine = preprocessedLine.replace( inline,
-                    modifiyedInlineData );
-            }
-        }
-        return preprocessedLine;
-    }
-
-    public String getId() {
-        return id;
+	public String getInternalId() {
+		return internalId;
     }
 
     public String getCaseNumber() {
@@ -214,7 +203,7 @@ public class Crime {
     @Override
     public String toString() {
         return "Crime{" +
-            "id='" + id + '\'' +
+ "id='" + internalId + '\'' +
             ", caseNumber='" + caseNumber + '\'' +
             ", date='" + date + '\'' +
             ", block='" + block + '\'' +
