@@ -19,62 +19,62 @@ import com.rdk.crime.repository.CrimeRepository;
 @Service
 public class ImportService {
 
-	private static final Logger LOG = LoggerFactory
-			.getLogger(ImportService.class);
+    private static final Logger LOG = LoggerFactory
+        .getLogger( ImportService.class );
 
-	@Autowired
-	private CrimeRepository repository;
+    @Autowired
+    private CrimeRepository repository;
 
-	private Path inputFile = Paths
-			.get("C:\\Users\\rode011\\Documents\\Crimes_-_2001_to_present.csv");
+    private Path inputFile = Paths
+        .get( "/Users/sascharodekamp/Downloads/Crimes_-_2001_to_present.csv" );
 
-	public void readAndStoreCrimes() {
+    public void readAndStoreCrimes() {
 
-		if (!inputFile.toFile().exists()) {
-			LOG.warn("Input file was not found {}", inputFile.toFile()
-					.getAbsolutePath());
-		}
+        if ( !inputFile.toFile().exists() ) {
+            LOG.warn( "Input file was not found {}", inputFile.toFile()
+                .getAbsolutePath() );
+        }
 
+        Instant start = Instant.now();
+        long count = 0;
 
-		Instant start = Instant.now();
-		long count = 0;
+        try (BufferedReader reader = new BufferedReader( new FileReader(
+            inputFile.toFile() ) )) {
 
-		try (BufferedReader reader = new BufferedReader(new FileReader(
-				inputFile.toFile()))) {
+            // skip first line, because its the CSV Header
+            reader.readLine();
 
-			// skip first line, because its the CSV Header
-			reader.readLine();
+            String line = null;
+            int packageCount = 0;
+            List<Crime> crimePack = Lists.newArrayList();
+            while ( ( line = reader.readLine() ) != null ) {
+                Crime crime = Crime.createFromInput( line );
+                if ( crime == null ) {
+                    continue;
+                }
 
-			String line = null;
-			int packageCount = 0;
-			List<Crime> crimePack = Lists.newArrayList();
-			while ((line = reader.readLine()) != null) {
-				Crime crime = Crime.createFromInput(line);
-				if (crime == null) {
-					continue;
-				}
+                if ( packageCount == 500000 ) {
+                    repository.save( crimePack );
+                    packageCount = 0;
+                    crimePack.clear();
+                    LOG.info( "Stored records {}", count );
+                }
 
-				if (packageCount == 500000) {
-					repository.save(crimePack);
-					packageCount = 0;
-					crimePack.clear();
-					LOG.info("Stored records {}", count);
-				}
+                count++;
+                packageCount++;
+                crimePack.add( crime );
 
-				count++;
-				packageCount++;
-				crimePack.add(crime);
+            }
+        }
+        catch ( Exception e ) {
+            LOG.error( e.getMessage(), e );
+        }
 
-			}
-		} catch (Exception e) {
-			LOG.error(e.getMessage(), e);
-		}
+        Instant end = Instant.now();
 
-		Instant end = Instant.now();
-
-		long d = end.getEpochSecond() - start.getEpochSecond();
-		LOG.info("Done in {}", Long.valueOf(d));
-		LOG.info("Stored overall records {}", count);
-	}
+        long d = end.getEpochSecond() - start.getEpochSecond();
+        LOG.info( "Done in {}", Long.valueOf( d ) );
+        LOG.info( "Stored overall records {}", count );
+    }
 
 }
